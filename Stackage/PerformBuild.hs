@@ -166,6 +166,7 @@ performBuild' pb@PerformBuild {..} = withBuildDir $ \builddir -> do
             $ \ClosedStream Inherited Inherited -> return ()
     pbLog $ encodeUtf8 "Copying built-in Haddocks\n"
     copyBuiltInHaddocks (pbDocDir pb)
+    pbLog $ encodeUtf8 "Finished copying built-in Haddocks\n"
 
     sem <- atomically $ newTSem pbJobs
     active <- newTVarIO (0 :: Int)
@@ -278,7 +279,7 @@ singleBuild pb@PerformBuild {..} SingleBuild {..} =
     log' t = do
         i <- readTVarIO sbActive
         errs <- readTVarIO sbErrsVar
-        pbLog $ encodeUtf8 $ concat
+        when False $ pbLog $ encodeUtf8 $ concat
             [ t
             , " (pending: "
             , tshow i
@@ -357,7 +358,6 @@ singleBuild pb@PerformBuild {..} SingleBuild {..} =
                 args = "haddock"
                      : "--hyperlink-source"
                      : "--html"
-                     : "--hoogle"
                      : "--html-location=../$pkg-$version/"
                      : hfsOpts
 
@@ -406,12 +406,15 @@ singleBuild pb@PerformBuild {..} SingleBuild {..} =
     warn t = atomically $ modifyTVar sbWarningsVar (. (t:))
 
     updateErrs exc = do
-        log' $ concat
-            [ display (piName sbPackageInfo)
-            , ": "
-            , tshow exc
-            ]
-        atomically $ modifyTVar sbErrsVar $ insertMap (piName sbPackageInfo) exc'
+        case exc' of
+            DependencyFailed _ -> return ()
+            _ -> do
+                log' $ concat
+                    [ display (piName sbPackageInfo)
+                    , ": "
+                    , tshow exc
+                    ]
+                atomically $ modifyTVar sbErrsVar $ insertMap (piName sbPackageInfo) exc'
       where
         exc' =
             case fromException exc of
