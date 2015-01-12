@@ -80,8 +80,6 @@ basicBuild getPlans _ = do
                                                           fullBuildConstraints
                                                           getPlans
                  let pb = (getPerformBuild buildFlags settings)
-                 print (pbPlan pb)
-
                  logs <- performBuild
                              pb
                  mapM_ putStrLn logs)
@@ -110,7 +108,6 @@ shakeBuild getPlans _ = do
                                               getPlans
                  let pb =
                          (getPerformBuild buildFlags settings)
-                 print (pbPlan pb)
                  Shake.performBuild pb)
     where buildType =
               Nightly
